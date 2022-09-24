@@ -24,11 +24,14 @@
 
 // Project includes
 #include "clang-expand/symbol-search/tool-factory.hpp"
+
 #include "clang-expand/common/query.hpp"
 #include "clang-expand/symbol-search/action.hpp"
 
 // Clang includes
 #include <clang/Frontend/FrontendAction.h>
+
+#include <memory>
 
 namespace ClangExpand {
 namespace SymbolSearch {
@@ -36,8 +39,8 @@ ToolFactory::ToolFactory(const Location& targetLocation, Query& query)
 : _targetLocation(targetLocation), _query(query) {
 }
 
-clang::FrontendAction* ToolFactory::create() {
-  return new SymbolSearch::Action(_targetLocation, _query);
+std::unique_ptr<clang::FrontendAction> ToolFactory::create() {
+  return std::make_unique<SymbolSearch::Action>(_targetLocation, _query);
 }
 
 }  // namespace SymbolSearch

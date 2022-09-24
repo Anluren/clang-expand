@@ -24,6 +24,7 @@
 
 // Project includes
 #include "clang-expand/common/definition-data.hpp"
+
 #include "clang-expand/common/assignee-data.hpp"
 #include "clang-expand/common/declaration-data.hpp"
 #include "clang-expand/common/definition-rewriter.hpp"
@@ -39,6 +40,7 @@
 #include <clang/AST/Stmt.h>
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Rewrite/Core/Rewriter.h>
+
 #include "clang-expand/common/call-data.hpp"
 #include "clang-expand/options.hpp"
 
@@ -134,8 +136,8 @@ std::string getRewrittenText(clang::Stmt* body,
     shouldDeclare = definitionRewriter.rewriteReturnsToAssignments(*body);
   }
 
-  const auto afterBrace = body->getLocStart().getLocWithOffset(+1);
-  const auto beforeBrace = body->getLocEnd().getLocWithOffset(-1);
+  const auto afterBrace = body->getBeginLoc().getLocWithOffset(+1);
+  const auto beforeBrace = body->getEndLoc().getLocWithOffset(-1);
   const clang::SourceRange range(afterBrace, beforeBrace);
 
   auto text = withoutIndentation(rewriter.getRewrittenText(range));

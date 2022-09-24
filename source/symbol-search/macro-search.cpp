@@ -24,6 +24,7 @@
 
 // Project includes
 #include "clang-expand/symbol-search/macro-search.hpp"
+
 #include "clang-expand/common/call-data.hpp"
 #include "clang-expand/common/definition-data.hpp"
 #include "clang-expand/common/location.hpp"
@@ -183,16 +184,18 @@ std::string MacroSearch::_rewriteMacro(const clang::MacroInfo& info,
 MacroSearch::ParameterMap MacroSearch::_createParameterMap(
     const clang::MacroInfo& info, const clang::MacroArgs& arguments) {
   ParameterMap mapping;
-  if (info.getNumArgs() == 0) return mapping;
+
+  if (arguments.getNumMacroArguments() == 0) return mapping;
 
   unsigned number = 0;
-  for (const auto* parameter : info.args()) {
+  for (const auto* parameter : info.params()) {
     const auto* firstToken = arguments.getUnexpArgument(number);
     auto numberOfTokens = arguments.getArgLength(firstToken);
     clang::TokenLexer lexer(firstToken,
                             numberOfTokens,
                             /*DisableExpansion=*/true,
                             false,
+                            /*getNumMacroArguments*/ false,
                             _preprocessor);
 
     llvm::SmallString<32> wholeArgument;

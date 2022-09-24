@@ -24,6 +24,7 @@
 
 // Project includes
 #include "clang-expand/symbol-search/action.hpp"
+
 #include "clang-expand/common/offset.hpp"
 #include "clang-expand/common/query.hpp"
 #include "clang-expand/common/routines.hpp"
@@ -108,18 +109,18 @@ bool verifyToken(const clang::Token& token) {
 clang::FileID getFileID(const Location& targetLocation,
                         clang::SourceManager& sourceManager) {
   auto& fileManager = sourceManager.getFileManager();
-  const auto* fileEntry = fileManager.getFile(targetLocation.filename);
-  if (fileEntry == nullptr || !fileEntry->isValid()) {
+  auto fileEntry = fileManager.getFile(targetLocation.filename);
+  if (fileEntry.getError() || !fileEntry.get()->isValid()) {
     Routines::error("Could not find file " +
                     llvm::Twine(targetLocation.filename) +
                     " in file manager\n");
   }
 
-  assert(fileEntry->getName() == targetLocation.filename &&
+  assert(fileEntry.get()->getName() == targetLocation.filename &&
          "Symbol search should only run on the target TU");
 
   const auto fileID =
-      sourceManager.getOrCreateFileID(fileEntry, clang::SrcMgr::C_User);
+      sourceManager.getOrCreateFileID(fileEntry.get(), clang::SrcMgr::C_User);
   if (!fileID.isValid()) {
     Routines::error("Error getting file ID from file entry");
   }
@@ -180,9 +181,8 @@ Action::Action(Location targetLocation, Query& query)
 : _query(query), _targetLocation(std::move(targetLocation)) {
 }
 
-bool Action::BeginSourceFileAction(clang::CompilerInstance& compiler,
-                                   llvm::StringRef filename) {
-  if (!super::BeginSourceFileAction(compiler, filename)) return false;
+bool Action::BeginSourceFileAction(clang::CompilerInstance& compiler) {
+  if (!super::BeginSourceFileAction(compiler)) return false;
 
   auto& sourceManager = compiler.getSourceManager();
   const clang::SourceLocation location =

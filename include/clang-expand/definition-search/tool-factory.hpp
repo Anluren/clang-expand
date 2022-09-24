@@ -30,6 +30,7 @@
 #include <clang/Tooling/Tooling.h>
 
 // Standard includes
+#include <algorithm>
 #include <iosfwd>
 
 namespace ClangExpand {
@@ -55,7 +56,7 @@ class ToolFactory : public clang::tooling::FrontendActionFactory {
 
   /// Creates the action of the definition search phase.
   /// \returns A `DefinitionSearch::Action`.
-  clang::FrontendAction* create() override;
+  std::unique_ptr<clang::FrontendAction> create() override;
 
  private:
   /// The file in which the declaration was found.

@@ -24,6 +24,7 @@
 
 // Project includes
 #include "clang-expand/symbol-search/match-handler.hpp"
+
 #include "clang-expand/common/assignee-data.hpp"
 #include "clang-expand/common/call-data.hpp"
 #include "clang-expand/common/declaration-data.hpp"
@@ -46,6 +47,7 @@
 #include <clang/AST/StmtIterator.h>
 #include <clang/AST/Type.h>
 #include <clang/ASTMatchers/ASTMatchers.h>
+#include <clang/Basic/LLVM.h>
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Basic/SourceManager.h>
 #include <clang/Lex/Lexer.h>
@@ -87,7 +89,7 @@ Range cleanCallRange(const clang::Expr& expression,
     // character of the right operand (for binary operators) or only operand
     // (for unary operators), for some reason. So we have to skip the whole
     // token and are then already at the semicolon (so no +1).
-    extraOffset = clang::Lexer::MeasureTokenLength(op->getLocEnd(),
+    extraOffset = clang::Lexer::MeasureTokenLength(op->getEndLoc(),
                                                    context.getSourceManager(),
                                                    context.getLangOpts());
   }
@@ -241,7 +243,7 @@ bool isImplicitExpression(const clang::Stmt& child, const clang::Stmt& parent) {
   // If we ignore all implicit types on the way from the parent to the child
   // node and we are back at the child node, then the parent must have been an
   // implicit type.
-  return parent.IgnoreImplicit() == &child;
+  return llvm::dyn_cast<clang::Expr>(&parent)->IgnoreImplicit() == &child;
 }
 
 /// Attempts to retrieve the parent of a node as the given type. It tries to
@@ -378,7 +380,7 @@ handleCallForBinaryOperator(const clang::BinaryOperator& binaryOperator,
 
   std::string name;
   if (const auto* declRefExpr = llvm::dyn_cast<clang::DeclRefExpr>(lhs)) {
-    name = declRefExpr->getDecl()->getName();
+    name = declRefExpr->getDecl()->getName().str();
   } else {
     // This may be a member expression, a function call or something else. But
     // since it's not a declaration, we can be quite safe to plop this into
@@ -499,9 +501,12 @@ void decorateCallDataWithMemberBase(CallData& callData,
   }
 
   if (auto* member = result.Nodes.getNodeAs<clang::MemberExpr>("member")) {
-    const auto* child = member->child_begin()->IgnoreImplicit();
-    if (!llvm::isa<clang::CXXThisExpr>(child)) {
-      const char* start = bufferPointerAt(member->getLocStart(), result);
+    // const auto* child =
+    // llvm::dyn_cast<clang::Expr>(member->child_begin())->IgnoreImplicit();
+    // const auto* child = member->child_begin()->IgnoreImplicit();
+    auto child = member->IgnoreImplicit()->child_begin();
+    if (!llvm::isa<clang::CXXThisExpr>(*child)) {
+      const char* start = bufferPointerAt(member->getBeginLoc(), result);
       const char* end = bufferPointerAt(member->getMemberLoc(), result);
       callData.base.assign(start, end);
       return;

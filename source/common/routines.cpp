@@ -24,6 +24,7 @@
 
 // Project includes
 #include "clang-expand/common/routines.hpp"
+
 #include "clang-expand/common/canonical-location.hpp"
 
 // Clang includes
@@ -76,7 +77,7 @@ std::string makeAbsolute(const std::string& filename) {
   const auto error = llvm::sys::fs::make_absolute(absolutePath);
   assert(!error && "Error generating absolute path");
   (void)error;
-  return absolutePath.str();
+  return std::string(absolutePath);
 }
 
 void error(const char* message) {

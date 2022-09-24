@@ -24,6 +24,7 @@
 
 // Project includes
 #include "clang-expand/definition-search/tool-factory.hpp"
+
 #include "clang-expand/common/query.hpp"
 #include "clang-expand/definition-search/action.hpp"
 
@@ -31,6 +32,7 @@
 #include <clang/Frontend/FrontendAction.h>
 
 // Standard includes
+#include <memory>
 #include <string>
 
 namespace ClangExpand {
@@ -39,8 +41,8 @@ ToolFactory::ToolFactory(const std::string& declarationFile, Query& query)
 : _declarationFile(declarationFile), _query(query) {
 }
 
-clang::FrontendAction* ToolFactory::create() {
-  return new DefinitionSearch::Action(_declarationFile, _query);
+std::unique_ptr<clang::FrontendAction> ToolFactory::create() {
+  return std::make_unique<DefinitionSearch::Action>(_declarationFile, _query);
 }
 
 }  // namespace DefinitionSearch

@@ -59,6 +59,7 @@ if (NOT CMAKE_HOST_APPLE)
 endif()
 
 find_package(LLVM REQUIRED)
+find_package(Clang REQUIRED)
 
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
 include_directories(SYSTEM ${CLANG_INCLUDE_DIRS})

@@ -24,15 +24,19 @@
 
 // Project includes
 #include "clang-expand/common/definition-rewriter.hpp"
+
 #include "clang-expand/common/assignee-data.hpp"
 #include "clang-expand/common/call-data.hpp"
 #include "clang-expand/common/routines.hpp"
 
 // Clang includes
+#include <clang/AST/ASTContext.h>
+#include <clang/AST/ASTTypeTraits.h>
 #include <clang/AST/Decl.h>
 #include <clang/AST/DeclTemplate.h>
 #include <clang/AST/Expr.h>
 #include <clang/AST/ExprCXX.h>
+#include <clang/AST/ParentMapContext.h>
 #include <clang/AST/Stmt.h>
 #include <clang/AST/Type.h>
 #include <clang/AST/TypeLoc.h>
@@ -81,8 +85,9 @@ const T* tryToGetParentOrDie(clang::ASTContext& context, const Node& node) {
 /// `CompoundStmt` of a function.
 void ensureReturnAllowsDefaultConstruction(
     clang::ASTContext& context, const clang::ReturnStmt& returnStatement) {
+  auto node = clang::DynTypedNode::create(returnStatement);
   const auto* compound =
-      tryToGetParentOrDie<clang::CompoundStmt>(context, returnStatement);
+      tryToGetParentOrDie<clang::CompoundStmt>(context, node);
   tryToGetParentOrDie<clang::FunctionDecl>(context, *compound);
 }
 }  // namespace
@@ -144,9 +149,9 @@ bool DefinitionRewriter::VisitTypeLoc(clang::TypeLoc typeLocation) {
 
   const auto original =
       templateType->getReplacedParameter()->desugar().getAsString();
-  const auto start = typeLocation.getLocStart();
+  const auto start = typeLocation.getBeginLoc();
   const auto end =
-      typeLocation.getLocStart().getLocWithOffset(original.length() - 1);
+      typeLocation.getBeginLoc().getLocWithOffset(original.length() - 1);
 
   const auto replacement = templateType->getReplacementType().getAsString();
   _rewriter.ReplaceText({start, end}, replacement);
@@ -218,7 +223,7 @@ void DefinitionRewriter::_rewriteMemberExpression(
     // Gobble up any kind of 'this->' statement or qualifier (e.g. super::x,
     // where 'super' is typedef for the base class, i.e. still an implicit
     // access).
-    const auto start = member.getLocStart();
+    const auto start = member.getBeginLoc();
     const auto end = member.getMemberLoc().getLocWithOffset(-1);
     _rewriter.ReplaceText({start, end}, _call.base);
   }
